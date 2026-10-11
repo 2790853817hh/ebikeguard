@@ -1,0 +1,74 @@
+[
+  {
+    "code": "ENTER_BUILDING",
+    "name": "电动车进楼入户",
+    "description": "将电动车推入住宅楼门厅、楼道、电梯轿厢等室内区域",
+    "risk_weight": 0.88,
+    "night_sensitive": true,
+    "sort_order": 10
+  },
+  {
+    "code": "INDOOR_CHARGING",
+    "name": "室内充电",
+    "description": "在住宅室内、地下室、车库等封闭空间为电动车充电",
+    "risk_weight": 0.95,
+    "night_sensitive": true,
+    "sort_order": 20
+  },
+  {
+    "code": "FLYING_WIRE_CHARGING",
+    "name": "飞线充电",
+    "description": "从楼上窗口、楼道私拉电线为电动车充电",
+    "risk_weight": 0.92,
+    "night_sensitive": true,
+    "sort_order": 30
+  },
+  {
+    "code": "CORRIDOR_PARKING",
+    "name": "楼道/门厅违规停放",
+    "description": "在疏散楼梯间、楼道、门厅、地下室通道停放电动车",
+    "risk_weight": 0.78,
+    "night_sensitive": true,
+    "sort_order": 40
+  },
+  {
+    "code": "BLOCKING_PASSAGE",
+    "name": "堵塞消防通道",
+    "description": "电动车占用、堵塞消防车通道或安全出口",
+    "risk_weight": 0.85,
+    "night_sensitive": false,
+    "sort_order": 50
+  },
+  {
+    "code": "EV_IN_ELEVATOR",
+    "name": "电动车进入电梯",
+    "description": "将电动车或电池推入电梯轿厢",
+    "risk_weight": 0.86,
+    "night_sensitive": false,
+    "sort_order": 60
+  },
+  {
+    "code": "BATTERY_INDOOR",
+    "name": "锂电池带入室内",
+    "description": "将电动车锂电池拆卸后带入住宅室内充电或存放",
+    "risk_weight": 0.94,
+    "night_sensitive": true,
+    "sort_order": 70
+  },
+  {
+    "code": "OCCUPYING_FIRE_EQUIPMENT",
+    "name": "占用消防设施区域",
+    "description": "电动车停放在消火栓、灭火器箱等消防设施周边造成遮挡",
+    "risk_weight": 0.72,
+    "night_sensitive": false,
+    "sort_order": 80
+  },
+  {
+    "code": "OTHER_VIOLATION",
+    "name": "其他违规行为",
+    "description": "其他电动车不安全使用行为",
+    "risk_weight": 0.55,
+    "night_sensitive": false,
+    "sort_order": 900
+  }
+]

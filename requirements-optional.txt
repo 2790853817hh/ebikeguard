@@ -1,0 +1,19 @@
+# 可选依赖：仅在启用对应外部服务时安装
+#   pip install -r requirements-optional.txt
+#
+# 这些包体积较大 / 与具体云厂商绑定，故意与核心 requirements.txt 分离，
+# 让「本地/Mock 全流程」保持零负担。
+
+# ---- 阿里云短信 ----
+# 通道 A：阿里云「短信认证」服务（SMS_PROVIDER=aliyun_dypns）——个人实名即可开通，仅验证码
+alibabacloud_dypnsapi20170525>=2.0.0
+# 通道 B：阿里云「短信服务」（SMS_PROVIDER=aliyun）——需企业/事业单位资质，支持通知短信
+alibabacloud_dysmsapi20170525>=2.0.0
+alibabacloud_tea_openapi>=0.3.8
+
+# ---- 阿里云 OSS 对象存储（STORAGE_BACKEND=oss） ----
+oss2>=2.18.0
+
+# ---- 高德地图逆地理编码：使用 httpx（已在核心依赖中），无需额外安装 ----
+# ---- 视觉大模型（AI_PROVIDER=qwenvl） ----
+# 走 OpenAI 兼容协议直调（httpx + Pillow，均已在核心依赖中），无需额外安装任何 SDK。

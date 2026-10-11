@@ -1,0 +1,14 @@
+{
+  "ai.auto_close_normal_enabled": "false",
+  "ai.high_confidence_threshold": "0.90",
+  "ai.trust_low_threshold": "0.50",
+  "ai.violation_threshold": "0.62",
+  "ai.normal_threshold": "0.34",
+  "review.supplement_sla_hours": "72",
+  "review.task_sla_hours": "24",
+  "appeal.window_days": "7",
+  "report.retention_days": "1825",
+  "report.auto_archive_days": "30",
+  "upload.max_images": "9",
+  "privacy.notice": "请勿拍摄可识别人脸、车牌的清晰画面；如已拍摄，系统或人工将做脱敏处理。"
+}

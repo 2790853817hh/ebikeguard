@@ -1,0 +1,17 @@
+# 电动车不安全使用行为识别系统 — 后端依赖
+fastapi>=0.110,<1.0
+uvicorn>=0.27
+sqlalchemy>=2.0,<3.0
+alembic>=1.13
+pydantic>=2.5
+pydantic-settings>=2.1
+python-multipart>=0.0.9
+python-dotenv>=1.0
+pillow>=10.2
+PyJWT>=2.8
+# 生产部署用（systemd 的 ExecStart 直接调用 .venv/bin/gunicorn，缺它服务会以 status=203/EXEC 启动失败）
+gunicorn>=21.2
+
+# 测试
+pytest>=8.0
+httpx>=0.27

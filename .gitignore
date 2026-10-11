@@ -1,0 +1,24 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env*
+!.env.example
+data/
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
+logs/
+*.log
+.idea/
+.vscode/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# 会话记忆与工作数据（不随仓库分发）
+.workbuddy/
+
+# 测试素材（AI 生成图，体积大，不属系统代码）
+test_images/

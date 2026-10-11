@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>我要上报 · 电动车不安全使用行为识别系统</title>
+<link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<div class="container container-narrow">
+
+  <div class="card">
+    <h2 class="card-title">📷 拍照上报 <span class="hint">发现电动车危险行为，随手拍下即可上报</span></h2>
+
+    <label class="field">
+      <span class="lbl">现场照片 <span class="req">*</span> <span class="subtle">（最多 <b id="maxImages">9</b> 张）</span></span>
+      <div class="photo-input" id="photoBox">
+        <div class="big">📸</div>
+        <div class="main">点击拍照 / 从相册选择</div>
+        <div class="subtle">支持 JPG / PNG / WEBP，单张不超过 15MB</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" multiple style="display:none">
+    </label>
+    <div class="thumb-grid" id="thumbGrid" style="margin-bottom:14px"></div>
+
+    <div id="privacyNotice" class="notice" style="margin-bottom:14px"></div>
+
+    <label class="field">
+      <span class="lbl">行为类型 <span class="req">*</span></span>
+      <select id="behaviorType"><option value="">加载中…</option></select>
+    </label>
+
+    <label class="field">
+      <span class="lbl">发生地址 <span class="req">*</span></span>
+      <textarea id="addressText" placeholder="请填写详细地址，例如：XX 小区 3 栋 2 单元 1 楼楼道"></textarea>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-sm" id="btnLocate" type="button">📍 获取当前位置</button>
+        <span class="subtle" id="locStatus" style="align-self:center"></span>
+      </div>
+    </label>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <label class="field" style="flex:1;min-width:180px">
+        <span class="lbl">拍摄时间</span>
+        <input type="datetime-local" id="shootTime">
+      </label>
+      <label class="field" style="flex:1;min-width:180px">
+        <span class="lbl">当前定位（经纬度）</span>
+        <input type="text" id="coordText" placeholder="未获取" readonly>
+      </label>
+    </div>
+
+    <label class="field">
+      <span class="lbl">补充说明</span>
+      <textarea id="remark" placeholder="可描述具体情况，例如：从 3 楼窗口拉线到楼下给电动车充电"></textarea>
+    </label>
+
+    <div class="actions-sticky">
+      <button class="btn btn-primary btn-block" id="btnSubmit">提交上报</button>
+      <p class="subtle" style="text-align:center;margin:8px 0 0;font-size:12.5px">
+        提交后将由 AI 自动初审，再由人工复核，结果会在「我的上报」中反馈。
+      </p>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/upload.js"></script>
+</body>
+</html>

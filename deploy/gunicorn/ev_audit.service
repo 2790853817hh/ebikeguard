@@ -1,0 +1,40 @@
+# ============================================================
+# systemd 服务单元：电动车不安全使用行为识别系统
+# 安装：
+#   sudo cp deploy/gunicorn/ev_audit.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ev_audit
+# ============================================================
+[Unit]
+Description=EV Unsafe Behavior Report Platform (FastAPI + Gunicorn)
+Documentation=file:///opt/ev_audit/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=evaudit
+Group=evaudit
+WorkingDirectory=/opt/ev_audit
+
+# 环境变量（SECRET_KEY 等敏感项建议单独放 EnvironmentFile，权限 600）
+EnvironmentFile=-/opt/ev_audit/.env
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/opt/ev_audit/.venv/bin:/usr/local/bin:/usr/bin:/bin
+
+ExecStart=/opt/ev_audit/.venv/bin/gunicorn -c deploy/gunicorn/gunicorn.conf.py app.main:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+Restart=always
+RestartSec=3
+
+# --- 安全加固 ---
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/ev_audit/data /opt/ev_audit/data/logs
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

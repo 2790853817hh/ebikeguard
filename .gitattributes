@@ -1,0 +1,5 @@
+# 行尾策略：仓库与检出工作区统一 LF。
+# 本仓库工作区即部署源（tar 打包 → 上传 Linux 服务器），统一 LF
+# 可避免 CRLF 在 bash / systemd / cron / nginx 解析时引发故障。
+# 注：eol 属性优先级最高，覆盖 core.autocrlf / core.eol 等本机配置。
+* text=auto eol=lf

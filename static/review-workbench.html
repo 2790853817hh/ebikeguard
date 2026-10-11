@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>审核工作台 · 电动车不安全使用行为识别系统</title>
+<link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<div class="container" style="max-width:1180px">
+  <div class="split">
+
+    <!-- 左：待审队列 -->
+    <div>
+      <div class="card">
+        <h3 class="card-title">🗂️ 待审队列 <span class="hint" id="queueHint"></span></h3>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          <select id="fStatus">
+            <option value="AI_DONE_PENDING_HUMAN">待人工审核</option>
+            <option value="HUMAN_REVIEWING">我已认领 / 审核中</option>
+            <option value="ESCALATED">疑难复核</option>
+            <option value="AI_DONE_PENDING_HUMAN,HUMAN_REVIEWING,ESCALATED">全部待处理</option>
+          </select>
+          <select id="fBehavior"><option value="">全部行为类型</option></select>
+          <select id="fAi">
+            <option value="">全部 AI 结论</option>
+            <option value="VIOLATION">疑似违规</option>
+            <option value="UNCERTAIN">无法判定</option>
+            <option value="NORMAL">疑似正常</option>
+          </select>
+          <input type="text" id="fKeyword" placeholder="按单号 / 地址检索">
+          <div style="display:flex;gap:8px">
+            <select id="fOrder" style="flex:1">
+              <option value="oldest">最早提交优先</option>
+              <option value="newest">最新提交优先</option>
+              <option value="ai_confidence">AI 置信度高优先</option>
+            </select>
+            <button class="btn btn-sm" id="btnSearch">查询</button>
+          </div>
+        </div>
+        <div id="queueBox"><div class="empty">加载中…</div></div>
+        <div style="text-align:center;margin-top:10px">
+          <button class="btn btn-sm" id="btnMore" style="display:none">加载更多</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：审核详情 -->
+    <div>
+      <div id="detailBox" class="card">
+        <div class="empty"><div class="big">👈</div>请从左侧选择一个待审任务</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/review.js"></script>
+</body>
+</html>

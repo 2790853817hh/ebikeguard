@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>我的上报 · 电动车不安全使用行为识别系统</title>
+<link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<div class="container">
+
+  <div class="card">
+    <h2 class="card-title">📋 <span id="pageTitle">我的上报</span> <span class="hint" id="totalHint"></span></h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <select id="filterStatus" style="max-width:200px">
+        <option value="">全部状态</option>
+        <option value="SUBMITTED,PENDING_AI,AI_DONE_PENDING_HUMAN,HUMAN_REVIEWING,ESCALATED">审核中</option>
+        <option value="NEED_SUPPLEMENT">待补充材料</option>
+        <option value="APPROVED">审核通过</option>
+        <option value="REJECTED">审核不通过</option>
+        <option value="APPEALING">申诉处理中</option>
+        <option value="ARCHIVED">已归档</option>
+      </select>
+      <button class="btn btn-sm" id="btnRefresh">刷新</button>
+      <a class="btn btn-sm btn-primary" href="upload.html" id="btnNew">＋ 新上报</a>
+    </div>
+    <div id="listBox"><div class="empty">加载中…</div></div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn btn-sm" id="btnMore" style="display:none">加载更多</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/my-reports.js"></script>
+</body>
+</html>
