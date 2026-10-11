@@ -19,7 +19,8 @@
         <div class="main">点击拍照 / 从相册选择</div>
         <div class="subtle">支持 JPG / PNG / WEBP，单张不超过 15MB</div>
       </div>
-      <input type="file" id="fileInput" accept="image/*" capture="environment" multiple style="display:none">
+      <!-- 不要加 capture 属性：会让手机端只能拍照、无法从相册选择（回归测试：tests/test_frontend_upload.py） -->
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
     </label>
     <div class="thumb-grid" id="thumbGrid" style="margin-bottom:14px"></div>
 
