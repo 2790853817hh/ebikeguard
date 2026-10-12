@@ -14,6 +14,7 @@ class AppUser(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     phone: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(128), comment="接收审核结果的邮箱（选填，上报人采集）")
     username: Mapped[str | None] = mapped_column(String(64), unique=True)
     password_hash: Mapped[str | None] = mapped_column(String(255))
     real_name: Mapped[str | None] = mapped_column(String(64))

@@ -113,6 +113,8 @@
     fd.append('behavior_type_code', behavior);
     fd.append('address_text', address);
     fd.append('remark', A.$('#remark').value.trim());
+    var emailEl = A.$('#contactEmail');
+    if (emailEl && emailEl.value.trim()) { fd.append('contact_email', emailEl.value.trim()); }
     fd.append('shoot_time', A.$('#shootTime').value || '');
     fd.append('location_source', geo.source);
     if (geo.lng !== null) { fd.append('longitude', geo.lng); fd.append('latitude', geo.lat); }

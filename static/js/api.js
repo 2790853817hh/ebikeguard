@@ -186,6 +186,8 @@
         links = '<a href="upload.html" class="' + (active === 'upload' ? 'active' : '') + '">我要上报</a>' +
                 '<a href="my-reports.html" class="' + (active === 'mine' ? 'active' : '') + '">我的上报</a>';
       }
+      links += '<a href="notifications.html" class="' + (active === 'notify' ? 'active' : '') + '">通知' +
+               '<span class="badge" id="navBadge" style="display:none"></span></a>';
     }
     var who = user ? ((user.real_name || user.username || (user.phone || '').replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')) +
       ' · ' + ({ reporter: '上报人', reviewer: '审核员', admin: '管理员' }[user.role] || user.role)) : '';
@@ -200,6 +202,30 @@
     document.body.insertAdjacentHTML('afterbegin', html);
     var btn = $('#btnLogout');
     if (btn) btn.onclick = function () { Auth.logout(); };
+    if (user) {
+      refreshUnreadBadge();
+      startBadgeLoop();
+    }
+  }
+
+  var _badgeTimer = null;
+
+  function startBadgeLoop() {
+    if (_badgeTimer) return;
+    _badgeTimer = setInterval(function () {
+      if (document.visibilityState === 'visible') refreshUnreadBadge();
+    }, 60000);
+  }
+
+  async function refreshUnreadBadge() {
+    var badge = $('#navBadge');
+    if (!badge) return;
+    try {
+      var data = await api('/notifications/unread-count');
+      var n = data.unread || 0;
+      badge.textContent = n > 99 ? '99+' : String(n);
+      badge.style.display = n > 0 ? '' : 'none';
+    } catch (e) { /* 未登录或网络异常时忽略 */ }
   }
 
   function notice(html, type) {
@@ -218,6 +244,7 @@
     uuid: uuid,
     query: query,
     renderHeader: renderHeader,
+    refreshUnreadBadge: refreshUnreadBadge,
     notice: notice,
     STATUS_LABEL: STATUS_LABEL,
     AI_LABEL: AI_LABEL

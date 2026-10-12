@@ -1,10 +1,10 @@
 """上报流程集成测试：登录 → 上传 → AI 分流 → 列表/详情 → 撤回 → 图片权限。"""
 from __future__ import annotations
 
-from tests.conftest import API, auth, make_image
+from tests.conftest import API, MOCK_CODE, auth, make_image
 
 
-def _submit(client, token, *, behavior="FLYING_WIRE_CHARGING", adapter=None, remark="楼道里拉线充电", client_uuid=None):
+def _submit(client, token, *, behavior="FLYING_WIRE_CHARGING", adapter=None, remark="楼道里拉线充电", client_uuid=None, contact_email=None):
     files = adapter or [
         ("images", ("a.jpg", make_image((200, 60, 60)), "image/jpeg")),
         ("images", ("b.jpg", make_image((60, 120, 200)), "image/jpeg")),
@@ -20,6 +20,8 @@ def _submit(client, token, *, behavior="FLYING_WIRE_CHARGING", adapter=None, rem
     }
     if client_uuid:
         data["client_uuid"] = client_uuid
+    if contact_email:
+        data["contact_email"] = contact_email
     return client.post(f"{API}/reports", files=files, data=data, headers=auth(token))
 
 
@@ -29,6 +31,43 @@ def test_sms_login_and_me(client, reporter_token):
     body = res.json()
     assert body["role"] == "reporter"
     assert body["phone"] == "13300000001"
+
+
+def test_contact_email_collected_and_editable(client):
+    """邮箱采集：上报时选填、首次采集为准；PUT /users/me/email 可改可清、非法值被拒。"""
+    phone = "13300008801"
+    client.post(f"{API}/auth/sms/send", json={"phone": phone})
+    login = client.post(f"{API}/auth/sms/login", json={"phone": phone, "code": MOCK_CODE})
+    assert login.status_code == 200, login.text
+    token = login.json()["access_token"]
+
+    # 1) 首次上报带邮箱 → 写入用户档案
+    res = _submit(client, token, contact_email="citizen1@example.com", client_uuid="ce-test-1")
+    assert res.status_code == 201, res.text
+    assert client.get(f"{API}/users/me", headers=auth(token)).json()["email"] == "citizen1@example.com"
+
+    # 2) 再次上报带不同邮箱 → 不覆盖（以首次采集为准）
+    res2 = _submit(client, token, contact_email="other@example.com", client_uuid="ce-test-2")
+    assert res2.status_code == 201, res2.text
+    assert client.get(f"{API}/users/me", headers=auth(token)).json()["email"] == "citizen1@example.com"
+
+    # 3) 非法邮箱格式 → 上报被拒
+    bad_submit = _submit(client, token, contact_email="not-an-email", client_uuid="ce-test-3")
+    assert bad_submit.status_code == 400
+
+    # 4) PUT /users/me/email 可修改
+    updated = client.put(f"{API}/users/me/email", json={"email": "changed@example.com"}, headers=auth(token))
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["email"] == "changed@example.com"
+
+    # 5) 非法邮箱被拒
+    bad = client.put(f"{API}/users/me/email", json={"email": "not-an-email"}, headers=auth(token))
+    assert bad.status_code == 422
+
+    # 6) 空字符串 = 清除
+    cleared = client.put(f"{API}/users/me/email", json={"email": ""}, headers=auth(token))
+    assert cleared.status_code == 200
+    assert not (cleared.json().get("email") or "")
 
 
 def test_behavior_types_available(client, reporter_token):

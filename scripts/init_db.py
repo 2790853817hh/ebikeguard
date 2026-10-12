@@ -32,6 +32,22 @@ DEMO_USERS = [
 ]
 
 
+def migrate_sqlite_columns() -> None:
+    """轻量幂等迁移：为既有 SQLite 库补充新增列（create_all 不会修改已存在的表）。"""
+    if not settings.database_url.startswith("sqlite"):
+        return
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "app_user" not in inspector.get_table_names():
+        return
+    columns = {col["name"] for col in inspector.get_columns("app_user")}
+    if "email" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE app_user ADD COLUMN email VARCHAR(128)"))
+        print("[ok] 迁移：app_user.email 列已补充")
+
+
 def seed_behavior_types(db) -> int:
     data = json.loads((SEED_DIR / "behavior_types.json").read_text(encoding="utf-8"))
     added = 0
@@ -96,6 +112,7 @@ def main() -> None:
 
     settings.ensure_dirs()
     Base.metadata.create_all(bind=engine)
+    migrate_sqlite_columns()
     print("[ok] 数据表已创建")
 
     with SessionLocal() as db:

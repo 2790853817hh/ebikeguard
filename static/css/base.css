@@ -70,7 +70,7 @@ label.field { display: block; margin-bottom: 12px; }
 label.field > span.lbl { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 label.field > span.lbl .req { color: var(--danger); }
 
-input[type="text"], input[type="tel"], input[type="password"], input[type="number"], select, textarea {
+input[type="text"], input[type="tel"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
   width: 100%; padding: 10px 12px;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: #fff; color: var(--text); font-size: 15px; font-family: inherit;
@@ -210,6 +210,18 @@ textarea { resize: vertical; min-height: 72px; }
 nav.main-nav { display: flex; gap: 12px; font-size: 14px; }
 nav.main-nav a { color: var(--muted); }
 nav.main-nav a.active { color: var(--primary); font-weight: 600; }
+
+/* ---------------- 通知红点 ---------------- */
+.badge {
+  display: inline-block; min-width: 16px; height: 16px; line-height: 16px;
+  padding: 0 4px; margin-left: 4px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 11px; text-align: center;
+  vertical-align: 1px;
+}
+.badge-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--danger); margin-right: 6px; vertical-align: 1px;
+}
 
 @media (max-width: 560px) {
   .container { padding: 12px; }

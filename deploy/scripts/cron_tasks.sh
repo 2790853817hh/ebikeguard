@@ -14,10 +14,10 @@ echo "[$(date '+%F %T')] 开始执行运维任务"
 """内联运维脚本：SLA 超期处理 + 归档。"""
 from datetime import timedelta
 
-from app.core.constants import ActorType, AuditAction, ReportStatus
+from app.core.constants import ActorType, AuditAction, NotificationEvent, ReportStatus
 from app.core.utils import parse_iso, utc_now, utc_now_iso
 from app.database import SessionLocal
-from app.models import Report
+from app.models import Notification, Report
 from app.services import config_service, notification_service, state_machine
 
 with SessionLocal() as db:
@@ -39,6 +39,35 @@ with SessionLocal() as db:
             rejected += 1
     db.commit()
     print(f"超期未补充自动驳回：{rejected} 条")
+
+    # 1.5) 人工队列超时提醒（按 review.task_sla_hours；同一工单在窗口内只提醒一次）
+    task_sla_hours = config_service.get_config_int("review.task_sla_hours", 24)
+    since = (utc_now() - timedelta(hours=task_sla_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    pending_rows = (
+        db.query(Report)
+        .filter(Report.status.in_([ReportStatus.AI_DONE_PENDING_HUMAN, ReportStatus.HUMAN_REVIEWING]))
+        .all()
+    )
+    alerted = 0
+    for r in pending_rows:
+        base = parse_iso(r.updated_at)
+        if not (base and utc_now() > base + timedelta(hours=task_sla_hours)):
+            continue
+        recent = (
+            db.query(Notification)
+            .filter(
+                Notification.report_id == r.id,
+                Notification.event_type == str(NotificationEvent.INTERNAL_SLA_TIMEOUT),
+                Notification.created_at >= since,
+            )
+            .first()
+        )
+        if recent:
+            continue
+        notification_service.notify_internal_sla_timeout(db, r)
+        alerted += 1
+    db.commit()
+    print(f"人工队列超时提醒：{alerted} 条")
 
     # 2) 终态记录自动归档
     archive_days = config_service.get_config_int("report.auto_archive_days", 30)

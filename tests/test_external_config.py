@@ -95,6 +95,28 @@ def _restore_settings():
         setattr(settings, k, v)
 
 
+def test_check_notify_rows_for_mock_and_unknown(monkeypatch):
+    """通知通道自检：未启用 → SKIP；写错通道名 → FAIL（不静默、不误报）。"""
+    mod = _load_check_external()
+    monkeypatch.setattr(settings, "email_provider", "mock")
+    monkeypatch.setattr(settings, "webhook_url", "")
+    mod.rows.clear()
+    mod.check_notify(probe=False, notify_to=None)
+    rows = {r[0]: r for r in mod.rows}
+    assert rows["邮件通道"][1] == mod.SKIP
+    assert rows["群机器人通道"][1] == mod.SKIP
+    assert rows["微信通道（预留）"][1] == mod.SKIP
+
+    monkeypatch.setattr(settings, "email_provider", "typo-mail")
+    monkeypatch.setattr(settings, "webhook_kind", "slack")
+    monkeypatch.setattr(settings, "webhook_url", "https://example.com/hook")
+    mod.rows.clear()
+    mod.check_notify(probe=False, notify_to=None)
+    rows = {r[0]: r for r in mod.rows}
+    assert rows["邮件通道"][1] == mod.FAIL
+    assert rows["群机器人通道"][1] == mod.FAIL
+
+
 def test_mock_provider_is_ready():
     settings.sms_provider = "mock"
     info = describe_sms_provider()

@@ -198,6 +198,7 @@ def run_ai_audit(report_id: int, *, force: bool = False) -> None:
                 target=ReportStatus.AI_DONE_PENDING_HUMAN,
                 detail={"ai_conclusion": str(result.conclusion), "ai_confidence": result.confidence},
             )
+            notification_service.notify_internal_review_task(db, report)
 
         db.commit()
         logger.info(

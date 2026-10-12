@@ -42,6 +42,7 @@ class TokenOut(BaseModel):
 class UserOut(ORMModel):
     id: int
     phone: str | None = None
+    email: str | None = None
     username: str | None = None
     real_name: str | None = None
     role: str
@@ -49,6 +50,20 @@ class UserOut(ORMModel):
     status: str
     created_at: str
     last_login_at: str | None = None
+
+
+class EmailUpdateIn(BaseModel):
+    """修改接收通知的邮箱（空字符串 = 清除）。"""
+
+    email: str = Field("", max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def _check_email(cls, v: str) -> str:
+        v = (v or "").strip()
+        if v and ("@" not in v or "." not in v.rsplit("@", 1)[-1] or len(v) < 6):
+            raise ValueError("请输入有效的邮箱地址")
+        return v
 
 
 TokenOut.model_rebuild()

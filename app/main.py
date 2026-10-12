@@ -77,6 +77,16 @@ def _log_external_readiness() -> None:
         else:
             logger.warning("外部服务｜短信：%s 未就绪 —— %s", sms["provider"], sms.get("detail", ""))
 
+        from app.adapters.notify.factory import describe_notify_channels
+
+        notify_info = describe_notify_channels()
+        for channel, label in (("email", "通知｜邮件"), ("webhook", "通知｜群机器人")):
+            item = notify_info[channel]
+            if item.get("ready"):
+                logger.info("外部服务｜%s：%s 已就绪（%s）", label, item.get("provider"), item.get("detail", ""))
+            else:
+                logger.info("外部服务｜%s：未启用或未就绪 —— %s", label, item.get("detail", ""))
+
         status = {
             "图片存储": (settings.storage_backend, settings.oss_ready() if settings.storage_backend == "oss" else True),
             "逆地理编码": (settings.geocoding_provider, settings.amap_ready() if settings.geocoding_provider == "amap" else True),
@@ -154,9 +164,25 @@ async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"ok": False, **detail})
 
 
+def _serializable_errors(errors: list) -> list:
+    """清洗 pydantic errors()：ctx.error 中的异常对象不可 JSON 序列化，转为字符串。
+
+    修复背景：自定义 field_validator 抛 ValueError 时，errors() 的 ctx 会带异常对象；
+    原处理器直接 json.dumps 会导致 422 响应本身崩溃（TypeError）。
+    """
+    cleaned = []
+    for item in errors:
+        entry = dict(item)
+        ctx = entry.get("ctx")
+        if isinstance(ctx, dict):
+            entry["ctx"] = {k: (str(v) if isinstance(v, Exception) else v) for k, v in ctx.items()}
+        cleaned.append(entry)
+    return cleaned
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    errors = exc.errors()
+    errors = _serializable_errors(exc.errors())
     first = errors[0] if errors else {}
     loc = ".".join(str(x) for x in first.get("loc", []) if x != "body")
     message = first.get("msg", "请求参数不合法")
@@ -185,6 +211,7 @@ def healthz() -> dict:
 
 @app.get("/api/v1/meta", tags=["系统"], summary="平台能力自述")
 def meta() -> dict:
+    from app.adapters.notify.factory import describe_notify_channels
     from app.adapters.sms.factory import describe_sms_provider
     from app.services import config_service
 
@@ -198,6 +225,7 @@ def meta() -> dict:
         "geocoding_provider": settings.geocoding_provider,
         "external_services": {
             "sms": {"provider": sms["provider"], "ready": sms["ready"], "detail": sms.get("detail")},
+            "notify": describe_notify_channels(),
             "storage": {"provider": settings.storage_backend, "ready": settings.oss_ready() if settings.storage_backend == "oss" else True},
             "geocoding": {"provider": settings.geocoding_provider, "ready": settings.amap_ready() if settings.geocoding_provider == "amap" else True},
             "ai": {"provider": settings.ai_provider, "ready": bool(settings.dashscope_api_key) if settings.ai_provider == "qwenvl" else True},

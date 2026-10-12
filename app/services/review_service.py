@@ -334,6 +334,7 @@ def decide(
         notification_service.notify_need_supplement(db, report, comment)
     elif target == ReportStatus.ESCALATED:
         notification_service.notify_escalated(db, report)
+        notification_service.notify_internal_escalated(db, report)
 
     db.commit()
     db.refresh(report)

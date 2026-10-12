@@ -135,6 +135,7 @@ def create_report(
     location_source: str | None,
     shoot_time: str | None,
     remark: str | None,
+    contact_email: str | None = None,
     files: list[tuple[str | None, bytes]],
     client_uuid: str | None,
     ip: str | None = None,
@@ -157,6 +158,10 @@ def create_report(
     address_text = (address_text or "").strip()
     if not address_text:
         raise BadRequest("请填写行为发生的地址")
+
+    contact_email = (contact_email or "").strip()
+    if contact_email and ("@" not in contact_email or "." not in contact_email.rsplit("@", 1)[-1]):
+        raise BadRequest("接收审核结果的邮箱格式不正确")
 
     behavior = get_behavior(db, behavior_type_id=behavior_type_id, code=behavior_type_code)
 
@@ -190,6 +195,10 @@ def create_report(
     )
     db.add(report)
     db.flush()  # 获取 report.id，用于生成存储键
+
+    # 选填：首次采集上报人邮箱（仅当用户尚未设置时写入；后续可在通知中心修改）
+    if contact_email and not (user.email or "").strip():
+        user.email = contact_email
 
     for idx, img in enumerate(processed):
         origin_key, thumb_key = image_service.store_image(report.id, img)
@@ -533,6 +542,7 @@ def appeal(
         user_agent=ua,
     )
     notification_service.notify_appeal_received(db, report)
+    notification_service.notify_internal_appeal_pending(db, report)
     db.commit()
     db.refresh(row)
     return row

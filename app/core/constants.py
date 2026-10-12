@@ -98,13 +98,41 @@ class NotificationEvent(StrEnum):
     ESCALATED = "ESCALATED"
     APPEAL_RECEIVED = "APPEAL_RECEIVED"
     APPEAL_RESOLVED = "APPEAL_RESOLVED"
-    REVIEW_TASK = "REVIEW_TASK"
+    REVIEW_TASK = "REVIEW_TASK"  # 内部：新待审工单
+    INTERNAL_SLA_TIMEOUT = "INTERNAL_SLA_TIMEOUT"  # 内部：人工队列超时
+    INTERNAL_APPEAL_PENDING = "INTERNAL_APPEAL_PENDING"  # 内部：申诉待处理
+    INTERNAL_ESCALATED = "INTERNAL_ESCALATED"  # 内部：疑难升级待复核
 
 
 class NotificationChannel(StrEnum):
     INAPP = "inapp"
     SMS = "sms"
     WECHAT = "wechat"
+    EMAIL = "email"
+    WEBHOOK = "webhook"
+
+
+#: 通知受众分类：上报人事件（外部触达 + 站内信）
+REPORTER_EVENTS = frozenset(
+    {
+        NotificationEvent.SUBMITTED,
+        NotificationEvent.FINAL_RESULT,
+        NotificationEvent.NEED_SUPPLEMENT,
+        NotificationEvent.ESCALATED,
+        NotificationEvent.APPEAL_RECEIVED,
+        NotificationEvent.APPEAL_RESOLVED,
+    }
+)
+
+#: 通知受众分类：内部运营提醒（站内信逐人 + 内部通道）
+INTERNAL_EVENTS = frozenset(
+    {
+        NotificationEvent.REVIEW_TASK,
+        NotificationEvent.INTERNAL_SLA_TIMEOUT,
+        NotificationEvent.INTERNAL_APPEAL_PENDING,
+        NotificationEvent.INTERNAL_ESCALATED,
+    }
+)
 
 
 class RejectReasonCode(StrEnum):
@@ -166,4 +194,11 @@ DEFAULT_SYSTEM_CONFIG: dict[str, tuple[str, str, str]] = {
         "privacy",
         "上传页隐私提示文案",
     ),
+    # —— 通知通道（外部下发；详见 docs/外部服务接入指南.md「通知通道」节） ——
+    "notify.enabled": ("true", "notify", "外部通知总开关（关 = 仅站内信）"),
+    "notify.email_enabled": ("true", "notify", "邮件通道开关（EMAIL_PROVIDER=smtp 且凭证就绪才实际发送）"),
+    "notify.webhook_enabled": ("true", "notify", "群机器人通道开关（WEBHOOK_URL 就绪才实际发送）"),
+    "notify.reporter_channels": ("email", "notify", "上报人事件的外部通道（逗号分隔，可加 sms）"),
+    "notify.internal_channels": ("email,webhook", "notify", "内部事件的外部通道（逗号分隔）"),
+    "notify.rate_limit_per_hour": ("20", "notify", "单用户每小时外部发送上限"),
 }

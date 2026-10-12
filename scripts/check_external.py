@@ -15,6 +15,9 @@
 
     # 检查线上域名与 HTTPS 证书剩余有效期
     .venv/Scripts/python scripts/check_external.py --domain ebikeguard.xyz
+
+    # 通知通道真实发送探测（邮件真发一封 / 群机器人真发一条）
+    .venv/Scripts/python scripts/check_external.py --probe --notify-to you@example.com
 """
 from __future__ import annotations
 
@@ -191,6 +194,55 @@ def check_sms(probe: bool, phone: str | None) -> None:
         add("短信通道", FAIL, f"发送异常：{type(exc).__name__} {exc}")
 
 
+# ---------------------------------------------------------------- 通知通道
+
+
+def check_notify(probe: bool, notify_to: str | None) -> None:
+    """邮件 / 群机器人通道：静态就绪判定 + 可选真实发送探测（--probe）。"""
+    from app.adapters.notify.base import NotifyMessage, NotifyRecipient
+    from app.adapters.notify.factory import (
+        describe_notify_channels,
+        get_email_provider,
+        get_webhook_provider,
+        get_wechat_provider,
+    )
+
+    info = describe_notify_channels()
+
+    email = info["email"]
+    if email.get("provider") == "mock":
+        add("邮件通道", SKIP, email.get("detail", "未启用"))
+    elif not email.get("ready"):
+        add("邮件通道", FAIL, email.get("detail", "配置不完整"))
+    elif not probe:
+        add("邮件通道", OK, f"{email.get('detail')}；加 --probe --notify-to <邮箱> 真实发送一封")
+    else:
+        target = notify_to or (settings.notify_ops_emails[0] if settings.notify_ops_emails else settings.smtp_from_addr)
+        msg = NotifyMessage(event="SELFCHECK", title="邮件通道自检", content="测试邮件：收到即表示邮件通道配置成功。", audience="internal")
+        try:
+            ok, detail = get_email_provider().send(msg, NotifyRecipient(email=target))
+        except Exception as exc:  # noqa: BLE001
+            ok, detail = False, f"异常：{type(exc).__name__} {exc}"
+        add("邮件通道", OK if ok else FAIL, f"真实发送到 {target}：{detail}")
+
+    hook = info["webhook"]
+    if not settings.webhook_url:
+        add("群机器人通道", SKIP, hook.get("detail", "未配置"))
+    elif not hook.get("ready"):
+        add("群机器人通道", FAIL, hook.get("detail", "配置不完整"))
+    elif not probe:
+        add("群机器人通道", OK, f"{hook.get('detail')}；加 --probe 真实发送一条")
+    else:
+        msg = NotifyMessage(event="SELFCHECK", title="群机器人自检", content="测试消息：收到即表示群机器人通道配置成功。", audience="internal")
+        try:
+            ok, detail = get_webhook_provider().send(msg, NotifyRecipient())
+        except Exception as exc:  # noqa: BLE001
+            ok, detail = False, f"异常：{type(exc).__name__} {exc}"
+        add("群机器人通道", OK if ok else FAIL, f"真实推送：{detail}")
+
+    add("微信通道（预留）", SKIP, get_wechat_provider().describe().get("detail", ""))
+
+
 # ---------------------------------------------------------------- 域名 / HTTPS
 
 
@@ -279,6 +331,7 @@ def main() -> None:
     parser.add_argument("--probe", action="store_true", help="执行真实外部调用（OSS 读写、高德、视觉模型小图调用各一次）")
     parser.add_argument("--sms", metavar="PHONE", help="真实发送一条验证码短信到该手机号")
     parser.add_argument("--domain", metavar="HOST", help="检查域名解析与 HTTPS 证书有效期")
+    parser.add_argument("--notify-to", metavar="EMAIL", help="通知通道邮件探测的收件人（配合 --probe）")
     args = parser.parse_args()
 
     print("=" * 78)
@@ -292,6 +345,7 @@ def main() -> None:
     check_amap(args.probe)
     check_sms(args.probe, args.sms)
     check_ai(args.probe)
+    check_notify(args.probe, args.notify_to)
     check_domain(args.domain)
 
     width = max(_display_width(r[0]) for r in rows) + 2

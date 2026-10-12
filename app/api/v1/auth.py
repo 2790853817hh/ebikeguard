@@ -8,7 +8,7 @@ from app.core.deps import get_client, get_current_user
 from app.core.deps import ClientInfo
 from app.database import get_db
 from app.models import AppUser
-from app.schemas.auth import LoginIn, RefreshIn, SmsLoginIn, SmsSendIn, TokenOut, UserOut
+from app.schemas.auth import EmailUpdateIn, LoginIn, RefreshIn, SmsLoginIn, SmsSendIn, TokenOut, UserOut
 from app.schemas.common import OkOut
 from app.services import auth_service
 
@@ -52,6 +52,18 @@ def logout(user: AppUser = Depends(get_current_user), db: Session = Depends(get_
 
 @router.get("/users/me", response_model=UserOut, summary="当前登录用户")
 def me(user: AppUser = Depends(get_current_user)) -> UserOut:
+    return UserOut.model_validate(user)
+
+
+@router.put("/users/me/email", response_model=UserOut, summary="设置接收通知的邮箱（空字符串=清除）")
+def update_my_email(
+    payload: EmailUpdateIn,
+    user: AppUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserOut:
+    user.email = payload.email or None
+    db.commit()
+    db.refresh(user)
     return UserOut.model_validate(user)
 
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>通知中心 · 电动车不安全使用行为识别系统</title>
+<link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<div class="container container-narrow">
+
+  <div class="card">
+    <h2 class="card-title">🔔 通知中心 <span class="hint" id="totalHint"></span></h2>
+    <div class="btn-row" style="margin-bottom:12px">
+      <button class="btn btn-sm" id="btnUnread">只看未读</button>
+      <button class="btn btn-sm" id="btnRefresh">刷新</button>
+    </div>
+    <div id="listBox"><div class="empty">加载中…</div></div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn btn-sm" id="btnMore" style="display:none">加载更多</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">✉️ 接收审核结果邮箱 <span class="hint">选填</span></h2>
+    <p class="subtle" style="margin-top:0">填写后，上报受理与审核结果将同步发送到该邮箱；留空则不发送邮件。</p>
+    <div class="btn-row">
+      <input type="email" id="emailInput" autocomplete="email" placeholder="name@example.com" style="flex:1;min-width:200px">
+      <button class="btn btn-sm btn-primary" id="btnSaveEmail">保存</button>
+    </div>
+    <div class="subtle" id="emailStatus" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/notifications.js"></script>
+</body>
+</html>

@@ -76,6 +76,21 @@ class Settings(BaseSettings):
     ai_vl_max_edge: int = 1024  # 送模型前图片最长边（控制请求体积与 token 成本）
     ai_vl_jpeg_quality: int = 82
 
+    # 通知通道（邮件 SMTP + 群机器人 Webhook；微信/短信为预留通道）
+    email_provider: str = "mock"  # mock（未启用）| smtp
+    smtp_host: str = ""  # 如 smtp.189.cn（189 邮箱）/ smtp.qq.com（QQ 邮箱）
+    smtp_port: int = 465  # 465=SSL（推荐）；587=STARTTLS；阿里云服务器出站 25 被封装，勿用
+    smtp_security: str = "ssl"  # ssl | starttls
+    smtp_username: str = ""
+    smtp_password: str = ""  # 邮箱「授权码」，非登录密码
+    smtp_from: str = ""  # 发件人（留空回落 SMTP_USERNAME）
+    smtp_from_name: str = "电动车安全上报"  # 发件人显示名
+    smtp_timeout_seconds: int = 10
+    webhook_kind: str = "wecom"  # wecom（企业微信）| dingtalk（钉钉）
+    webhook_url: str = ""  # 群机器人完整地址（含密钥，勿外贴）
+    webhook_timeout_seconds: int = 8
+    notify_ops_email: str = ""  # 内部提醒收件邮箱（可选，逗号分隔）
+
     # ---------- 上传限制 ----------
     max_images_per_report: int = 9
     max_image_mb: int = 15
@@ -155,6 +170,62 @@ class Settings(BaseSettings):
     def ai_vl_ready(self) -> bool:
         """视觉大模型（OpenAI 兼容通道）是否已配置完整。"""
         return bool(self.dashscope_api_key and self.ai_vl_base_url and self.ai_vl_model)
+
+    # ---- 通知通道（邮件 / 群机器人） ----
+    @property
+    def email_provider_key(self) -> str:
+        """归一化后的邮件通道标识：mock / smtp / unknown。
+
+        写错通道名时返回 unknown（而不是悄悄退回 mock），避免「配了却在发模拟」。
+        """
+        raw = (self.email_provider or "").strip().lower()
+        if raw in ("", "mock", "off", "none"):
+            return "mock"
+        if raw in ("smtp", "email", "mail"):
+            return "smtp"
+        return "unknown"
+
+    @property
+    def smtp_security_key(self) -> str:
+        """归一化 SMTP 加密方式：ssl / starttls / unknown。"""
+        raw = (self.smtp_security or "").strip().lower()
+        if raw in ("", "ssl", "smtps"):
+            return "ssl"
+        if raw in ("starttls", "tls"):
+            return "starttls"
+        return "unknown"
+
+    @property
+    def smtp_from_addr(self) -> str:
+        return self.smtp_from or self.smtp_username
+
+    @property
+    def webhook_kind_key(self) -> str:
+        """归一化群机器人类型：wecom / dingtalk / unknown。"""
+        raw = (self.webhook_kind or "").strip().lower()
+        if raw in ("", "wecom", "wechat_work", "qywx"):
+            return "wecom"
+        if raw in ("dingtalk", "ding", "dingding"):
+            return "dingtalk"
+        return "unknown"
+
+    @property
+    def notify_ops_emails(self) -> list[str]:
+        return [e.strip() for e in (self.notify_ops_email or "").split(",") if e.strip()]
+
+    def email_ready(self) -> bool:
+        """邮件通道是否已配置完整（不含运行时开关判断）。"""
+        return bool(
+            self.email_provider_key == "smtp"
+            and self.smtp_host
+            and self.smtp_username
+            and self.smtp_password
+            and self.smtp_security_key != "unknown"
+        )
+
+    def webhook_ready(self) -> bool:
+        """群机器人通道是否已配置（URL 存在且类型可识别）。"""
+        return bool(self.webhook_url and self.webhook_kind_key != "unknown")
 
     def ensure_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)

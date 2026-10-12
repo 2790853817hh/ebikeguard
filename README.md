@@ -137,20 +137,21 @@ app/
 │   ├─ report_service.py    上报提交/查询/撤回/补充/申诉
 │   ├─ review_service.py    队列/认领/结论/二次复核/申诉复议
 │   ├─ image_service.py     校验/EXIF/压缩/缩略图/哈希/签名
-│   ├─ notification_service.py  站内信 + 缓和文案模板
+│   ├─ notification_service.py  站内信 + 多通道外发（邮件/Webhook/短信路由）
 │   ├─ stats_service.py     统计聚合
 │   └─ config_service.py    系统配置（带缓存）
 ├─ adapters/                ★ 可替换外部服务
-│   ├─ ai/                  base(协议) / rule_based(占位) / qwen_vl(预留) / factory
+│   ├─ ai/                  base(协议) / rule_based(占位) / qwen_vl / factory
 │   ├─ storage/             base / local_disk / aliyun_oss(预留) / factory
-│   ├─ sms/                 base / mock / aliyun(预留) / factory
+│   ├─ sms/                 base / mock / aliyun_dypns / aliyun / factory
+│   ├─ notify/              base / mock / email_smtp / webhook / wechat(预留) / factory
 │   └─ geocoding/           base / stub / amap / factory
 ├─ api/v1/                  auth / reports / images / review / notifications / behavior_types / admin
-├─ static/                  前端（index / upload / my-reports / report-detail / review-workbench / admin）
+├─ static/                  前端（index / upload / my-reports / report-detail / notifications / review-workbench / admin）
 ├─ seeds/                   行为类型字典、默认系统配置
-├─ scripts/                 init_db（建表+种子）/ demo_data（演示数据）/ check_external（外部服务自检）
+├─ scripts/                 init_db / demo_data / check_external / enable_sms·enable_ai·enable_notify（一键启用+真实探测+失败回滚）
 ├─ docs/                    外部服务接入指南
-├─ tests/                   59 个测试（状态机 / 规则引擎 / 上报 / 审核）
+├─ tests/                   180 个测试（状态机 / 上报 / 审核 / 通知通道 / 前端静态约束）
 └─ deploy/                  nginx / gunicorn / systemd / deploy.sh / backup.sh / cron_tasks.sh
 ```
 
@@ -160,7 +161,7 @@ app/
 
 | 表                     | 用途                                                     |
 | --------------------- | ------------------------------------------------------ |
-| `app_user`            | 用户（reporter / reviewer / admin），`token_version` 用于登出吊销 |
+| `app_user`            | 用户（reporter / reviewer / admin），含接收通知的 `email`（选填）；`token_version` 用于登出吊销 |
 | `behavior_type`       | 行为类型字典（含风险权重、夜间敏感标记）                                   |
 | `report`              | 上报记录（状态、定位、结论、审派人、幂等键…）                                |
 | `report_image`        | 图片（sha256 去重、pHash 相似检测、EXIF/GPS）                      |
@@ -168,7 +169,7 @@ app/
 | `human_audit_record`  | 人工审核记录（结论、驳回原因、二次复核标记）                                 |
 | `audit_action_log`    | 状态流转全留痕（谁、何时、从什么状态到什么状态）                               |
 | `operation_audit_log` | 管理动作审计（改配置、改角色、导出…）                                    |
-| `notification`        | 通知（站内信 / 短信 / 微信渠道）                                    |
+| `notification`        | 通知（站内信必达 + 邮件/Webhook/短信外部通道，多通道并行；发送状态如实记录） |
 | `system_config`       | 系统配置（阈值、SLA、开关，后台可改）                                   |
 | `appeal` / `sms_code` | 申诉 / 短信验证码                                             |
 
@@ -187,6 +188,10 @@ app/
 | `review.task_sla_hours`                          | `24`            | 人工审核时限（超期在队列中高亮）                 |
 | `appeal.window_days`                             | `7`             | 终态后可申诉天数                         |
 | `report.auto_archive_days`                       | `30`            | 终态后自动归档天数                        |
+| `notify.enabled`                                 | `true`          | 外部通知总开关（关 = 仅站内信）                |
+| `notify.email_enabled` / `notify.webhook_enabled` | `true` / `true` | 邮件 / 群机器人通道开关（配置就绪才实发）           |
+| `notify.reporter_channels` / `notify.internal_channels` | `email` / `email,webhook` | 上报人 / 内部事件的外部通道名单（逗号分隔，可含 `sms`） |
+| `notify.rate_limit_per_hour`                     | `20`            | 单用户每小时外部发送上限                     |
 
 ---
 

@@ -10,5 +10,11 @@
   "report.retention_days": "1825",
   "report.auto_archive_days": "30",
   "upload.max_images": "9",
-  "privacy.notice": "请勿拍摄可识别人脸、车牌的清晰画面；如已拍摄，系统或人工将做脱敏处理。"
+  "privacy.notice": "请勿拍摄可识别人脸、车牌的清晰画面；如已拍摄，系统或人工将做脱敏处理。",
+  "notify.enabled": "true",
+  "notify.email_enabled": "true",
+  "notify.webhook_enabled": "true",
+  "notify.reporter_channels": "email",
+  "notify.internal_channels": "email,webhook",
+  "notify.rate_limit_per_hour": "20"
 }
