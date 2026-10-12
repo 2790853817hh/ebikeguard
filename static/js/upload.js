@@ -123,7 +123,7 @@
     try {
       var res = await A.api('/reports', { method: 'POST', form: fd });
       A.Toast.success('上报成功，受理编号 ' + res.report_no);
-      setTimeout(function () { location.href = 'report-detail.html?id=' + res.id; }, 800);
+      setTimeout(function () { location.href = '/report-detail.html?id=' + res.id; }, 800);
     } catch (e) {
       btn.disabled = false; btn.textContent = '提交上报';
       A.Toast.error(e.message);

@@ -1,6 +1,16 @@
 /**
  * 共享前端基础库：请求封装、登录态、UI 小工具。
  * 无构建链，原生 ES5+/ES2017，直接 <script src> 引入。
+ *
+ * 【路径约定 · 强制】本文件内所有页面跳转与静态资源引用一律使用**绝对路径**（以 / 开头），
+ * 例如 '/my-reports.html'、'/css/base.css'，禁止裸相对路径（如 'my-reports.html'）。
+ *
+ * 原因（2026-10-12 缺陷根因）：本文件被根级页面与 admin/ 子目录页面共用，
+ * 裸相对路径会随当前页面所在目录解析。在 /admin/dashboard.html 下点击
+ * href="review-workbench.html" 会跳到 /admin/review-workbench.html（不存在），
+ * Nginx 的 try_files 兜底返回 index.html 的 HTML；该 HTML 里 <link href="css/base.css">
+ * 又按 /admin/ 解析成 /admin/css/base.css 并再次兜底返回 HTML ——
+ * 浏览器把 HTML 当 CSS 解析，整页样式丢失（表现为纯白裸排页面）。
  */
 (function (global) {
   'use strict';
@@ -9,6 +19,13 @@
   var KEY_ACCESS = 'ev_access';
   var KEY_REFRESH = 'ev_refresh';
   var KEY_USER = 'ev_user';
+
+  /**
+   * 页面路径规范化：一律返回**站点根下的绝对路径**。
+   * 约定：本应用固定部署在站点根（Nginx `root /opt/ev_audit/static`），
+   * 因此 '/my-reports.html' 这类以 / 开头的路径在任何页面、任何 URL 形态下都稳定可解析。
+   */
+  function page(p) { return '/' + String(p).replace(/^\.?\//, ''); }
 
   var Auth = {
     get token() { return localStorage.getItem(KEY_ACCESS); },
@@ -30,23 +47,23 @@
       localStorage.removeItem(KEY_REFRESH);
       localStorage.removeItem(KEY_USER);
     },
-    home: function () { return this.isReviewer() ? 'review-workbench.html' : 'my-reports.html'; },
+    home: function () { return this.isReviewer() ? '/review-workbench.html' : '/my-reports.html'; },
     requireLogin: function () {
-      if (!this.token) { location.replace('index.html'); return false; }
+      if (!this.token) { location.replace('/index.html'); return false; }
       return true;
     },
     requireReviewer: function () {
       if (!this.requireLogin()) return false;
-      if (!this.isReviewer()) { location.replace('my-reports.html'); return false; }
+      if (!this.isReviewer()) { location.replace('/my-reports.html'); return false; }
       return true;
     },
     logout: function (silent) {
       var self = this;
       if (!silent && this.token) {
         api('/auth/logout', { method: 'POST' }).catch(function () {}).then(function () {
-          self.clear(); location.replace('index.html');
+          self.clear(); location.replace('/index.html');
         });
-      } else { this.clear(); location.replace('index.html'); }
+      } else { this.clear(); location.replace('/index.html'); }
     }
   };
 
@@ -89,9 +106,9 @@
     if (!res.ok) {
       if (res.status === 401 && options.auth !== false) {
         Auth.clear();
-        if (!/index\.html$/.test(location.pathname) && location.pathname !== '/') {
+        if (!/\/index\.html$/.test(location.pathname) && location.pathname !== '/') {
           Toast.error('登录已过期，请重新登录');
-          setTimeout(function () { location.replace('index.html'); }, 900);
+          setTimeout(function () { location.replace('/index.html'); }, 900);
         }
       }
       throw buildError(res, data);
@@ -179,14 +196,14 @@
     var links = '';
     if (user) {
       if (Auth.isReviewer()) {
-        links = '<a href="review-workbench.html" class="' + (active === 'review' ? 'active' : '') + '">审核工作台</a>' +
-                '<a href="my-reports.html" class="' + (active === 'mine' ? 'active' : '') + '">全部上报</a>' +
-                (Auth.isAdmin() ? '<a href="admin/dashboard.html" class="' + (active === 'admin' ? 'active' : '') + '">统计后台</a>' : '');
+        links = '<a href="/review-workbench.html" class="' + (active === 'review' ? 'active' : '') + '">审核工作台</a>' +
+                '<a href="/my-reports.html" class="' + (active === 'mine' ? 'active' : '') + '">全部上报</a>' +
+                (Auth.isAdmin() ? '<a href="/admin/dashboard.html" class="' + (active === 'admin' ? 'active' : '') + '">统计后台</a>' : '');
       } else {
-        links = '<a href="upload.html" class="' + (active === 'upload' ? 'active' : '') + '">我要上报</a>' +
-                '<a href="my-reports.html" class="' + (active === 'mine' ? 'active' : '') + '">我的上报</a>';
+        links = '<a href="/upload.html" class="' + (active === 'upload' ? 'active' : '') + '">我要上报</a>' +
+                '<a href="/my-reports.html" class="' + (active === 'mine' ? 'active' : '') + '">我的上报</a>';
       }
-      links += '<a href="notifications.html" class="' + (active === 'notify' ? 'active' : '') + '">通知' +
+      links += '<a href="/notifications.html" class="' + (active === 'notify' ? 'active' : '') + '">通知' +
                '<span class="badge" id="navBadge" style="display:none"></span></a>';
     }
     var who = user ? ((user.real_name || user.username || (user.phone || '').replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')) +
@@ -235,6 +252,7 @@
   global.API = {
     Auth: Auth,
     api: api,
+    page: page,
     $: $, $$: $$,
     escapeHtml: escapeHtml,
     Toast: Toast,

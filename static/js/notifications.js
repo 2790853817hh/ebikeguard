@@ -54,7 +54,7 @@
       } catch (e) { /* 标记失败不阻塞跳转 */ }
     }
     var rid = el.dataset.report;
-    if (rid) location.href = 'report-detail.html?id=' + rid;
+    if (rid) location.href = '/report-detail.html?id=' + rid;
   }
 
   async function loadEmail() {

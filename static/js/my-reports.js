@@ -21,12 +21,12 @@
       A.$('#totalHint').textContent = '共 ' + total + ' 条';
       var html = data.items.map(itemHtml).join('');
       if (!data.items.length && !append) {
-        html = '<div class="empty"><div class="big">🗂️</div>还没有上报记录<br><a href="upload.html">立即上报一条</a></div>';
+        html = '<div class="empty"><div class="big">🗂️</div>还没有上报记录<br><a href="/upload.html">立即上报一条</a></div>';
       }
       if (append) box.insertAdjacentHTML('beforeend', html);
       else box.innerHTML = html;
       A.$$('#listBox .report-item').forEach(function (el) {
-        el.onclick = function () { location.href = 'report-detail.html?id=' + el.dataset.id; };
+        el.onclick = function () { location.href = '/report-detail.html?id=' + el.dataset.id; };
       });
       A.$('#btnMore').style.display = page * pageSize < total ? '' : 'none';
     } catch (e) {

@@ -47,3 +47,31 @@ def test_deploy_script_restarts_service_on_redeploy():
     """
     script = (ROOT / "deploy" / "scripts" / "deploy.sh").read_text(encoding="utf-8")
     assert "systemctl restart ev_audit" in script, "重复部署时新代码不会生效：脚本缺少 systemctl restart"
+
+
+# ---------------------------------------------------------------- Nginx 静态资源
+
+
+NGINX_CONF = ROOT / "deploy" / "nginx" / "ev_audit.conf"
+
+
+def test_nginx_static_assets_return_404_instead_of_html():
+    """静态资源缺失时必须返回 404，不得兜底成 index.html 的 HTML。
+
+    缺陷背景（2026-10-12 «样式全丢» 故障的第二环）：原配置只有一句
+    `try_files $uri $uri/ /index.html;`，任何路径拼错都会拿到 200 + HTML；
+    浏览器把 HTML 当 CSS/JS 解析 → 样式静默失效、整页裸排，且无明显报错。
+    修复要求：对带静态资源扩展名的请求显式 `try_files $uri =404`。
+    """
+    conf = NGINX_CONF.read_text(encoding="utf-8")
+    assert re.search(r"\.\(\?:css\|js", conf), "缺少针对 css/js 等扩展名的 location 规则"
+    assert "try_files $uri =404;" in conf, "静态资源 location 必须 try_files $uri =404，禁止兜底成 HTML"
+
+
+def test_nginx_has_extension_matching_location():
+    """扩展名 location 必须使用正则匹配（~*），才能优先于前缀 location /。"""
+    conf = NGINX_CONF.read_text(encoding="utf-8")
+    assert re.search(r"location\s+~\*\s+\\\.\(\?:css\|js", conf), (
+        "静态资源 location 应为 `location ~* \\.(?:css|js|...)`，"
+        "否则前缀 location / 会先命中并把资源请求兜底成 index.html"
+    )
