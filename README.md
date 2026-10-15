@@ -32,7 +32,7 @@
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
-# 2. 初始化数据库 + 种子数据（行为类型字典、系统配置、演示账号）
+# 2. 初始化数据库 + 种子数据（行为类型字典、系统配置、管理端账号）
 .\.venv\Scripts\python.exe scripts\init_db.py
 
 # 3. 启动
@@ -43,15 +43,22 @@ python -m venv .venv
 > Linux / macOS 上把 `.\.venv\Scripts\python.exe` 换成 `./.venv/bin/python` 即可；
 > 服务器侧的部署脚本（`deploy/scripts/*.sh`）仍是 bash。
 
-### 演示账号
+### 管理端账号
 
-| 角色  | 账号          | 密码             | 说明                                                      |
-| --- | ----------- | -------------- | ------------------------------------------------------- |
-| 管理员 | `admin`     | `Admin@12345`  | 统计后台、配置、申诉处理                                            |
-| 审核员 | `reviewer1` | `Review@12345` | 审核工作台                                                   |
-| 审核员 | `reviewer2` | `Review@12345` | 用于疑难二次复核演示                                              |
-| 上报人 | 任意 11 位手机号  | 短信验证码          | Mock 环境固定验证码 `888888`（`.env` 的 `SMS_MOCK_CODE`），登录即自动注册 |
+| 角色  | 账号          | 密码                        | 说明                                                      |
+| --- | ----------- | ------------------------- | ------------------------------------------------------- |
+| 管理员 | `admin`     | 初始化时设定 / 随机生成并打印一次 | 统计后台、配置、申诉处理                                            |
+| 审核员 | `reviewer1` | 初始化时设定 / 随机生成并打印一次 | 审核工作台                                                   |
+| 审核员 | `reviewer2` | 初始化时设定 / 随机生成并打印一次 | 用于疑难二次复核演示                                              |
+| 上报人 | 任意 11 位手机号  | 短信验证码                     | Mock 环境固定验证码 `888888`（`.env` 的 `SMS_MOCK_CODE`），登录即自动注册 |
 
+> **密码不再写死在代码或登录页中**（2026-10-15 起）。三种设定方式：
+> 1. 在 `.env` 中设置 `SEED_ADMIN_PASSWORD` / `SEED_REVIEWER1_PASSWORD` / `SEED_REVIEWER2_PASSWORD`，
+>    再执行 `scripts/init_db.py`（仅对**新建**账号生效，已存在的账号不会被覆盖）；
+> 2. 不配置则由初始化脚本随机生成强密码，**仅在首次运行的控制台打印一次**，请立即记录；
+> 3. 随时修改既有账号：`.\.venv\Scripts\python.exe scripts\set_password.py --username admin --generate`
+>    （服务器上为 `./.venv/bin/python scripts/set_password.py --username admin --generate`）。
+>    改密后该账号此前签发的登录凭证立即失效，需重新登录。
 
 
 > 手机端访问：本机启动后用手机访问 `http://<电脑局域网IP>:8000/`。  

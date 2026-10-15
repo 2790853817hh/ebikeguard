@@ -98,6 +98,13 @@ class Settings(BaseSettings):
     thumb_max_edge: int = 320
     image_jpeg_quality: int = 85
 
+    # ---------- 初始管理端账号密码（仅 init_db.py 首次创建账号时使用） ----------
+    # 说明（2026-10-15）：原先明文写在 scripts/init_db.py 里并展示在登录页，
+    # 属安全隐患。现改为「环境变量 / .env 注入」：留空则初始化时随机生成并打印一次。
+    seed_admin_password: str = ""
+    seed_reviewer1_password: str = ""
+    seed_reviewer2_password: str = ""
+
     image_url_ttl_seconds: int = 600
 
     cors_origins: str = "*"

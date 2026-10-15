@@ -5,6 +5,7 @@ import hashlib
 import hmac
 import io
 import random
+import secrets
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -114,6 +115,34 @@ def verify_image_token(image_id: str, expires_at: int, token: str, secret: str) 
 
 def gen_numeric_code(length: int = 6) -> str:
     return "".join(str(random.randint(0, 9)) for _ in range(length))
+
+
+# 密码字符集：排除易混淆字符（I O l o 0 1）与 shell 敏感字符（$ ` " ' \ 空格），
+# 便于在终端/配置文件中直接粘贴而不被转义
+_PWD_UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+_PWD_LOWER = "abcdefghijkmnpqrstuvwxyz"
+_PWD_DIGITS = "23456789"
+_PWD_SYMBOLS = "@#%+=?"
+_PWD_ALL = _PWD_UPPER + _PWD_LOWER + _PWD_DIGITS + _PWD_SYMBOLS
+
+
+def gen_password(length: int = 12) -> str:
+    """生成强随机密码（大写/小写/数字/符号四类齐全，使用 secrets 熵源）。
+
+    用于初始化账号与改密脚本；与 `gen_numeric_code` 不同，此处必须使用
+    cryptographically secure 的 `secrets`，不可退回 `random`。
+    """
+    if length < 8:
+        raise ValueError("密码长度至少 8 位")
+    while True:
+        pwd = "".join(secrets.choice(_PWD_ALL) for _ in range(length))
+        if (
+            any(c in _PWD_UPPER for c in pwd)
+            and any(c in _PWD_LOWER for c in pwd)
+            and any(c in _PWD_DIGITS for c in pwd)
+            and any(c in _PWD_SYMBOLS for c in pwd)
+        ):
+            return pwd
 
 
 def detect_mime_by_magic(data: bytes) -> str | None:

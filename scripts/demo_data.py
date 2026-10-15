@@ -3,11 +3,15 @@
 用法（服务需已启动）：
     python scripts/demo_data.py                       # 默认 http://127.0.0.1:8000
     python scripts/demo_data.py --base http://host:8000 --count 4
+
+审核员密码（2026-10-15 起不再硬编码）：
+    --reviewer-password <密码>  或  环境变量 REVIEWER_PASSWORD
 """
 from __future__ import annotations
 
 import argparse
 import io
+import os
 import random
 import sys
 import time
@@ -50,6 +54,12 @@ def main() -> None:
     parser.add_argument("--base", default="http://127.0.0.1:8000")
     parser.add_argument("--phone", default="13349638573", help="上报人手机号（默认使用本机演示号码）")
     parser.add_argument("--count", type=int, default=3, help="生成多少条上报（最多 5 条）")
+    parser.add_argument("--reviewer-user", default="reviewer1", help="审核员账号（默认 reviewer1）")
+    parser.add_argument(
+        "--reviewer-password",
+        default=os.environ.get("REVIEWER_PASSWORD", ""),
+        help="审核员密码（也可用环境变量 REVIEWER_PASSWORD 提供）",
+    )
     args = parser.parse_args()
 
     base = args.base.rstrip("/")
@@ -103,46 +113,53 @@ def main() -> None:
         if not created:
             sys.exit(0)
 
-        # 2) 审核员处理
-        r = c.post(f"{API}/auth/login", json={"username": "reviewer1", "password": "Review@12345"})
-        if r.status_code != 200:
-            print("审核员登录失败（是否已执行 scripts/init_db.py？）")
-            sys.exit(0)
-        vh = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        # 2) 审核员处理（密码需通过 --reviewer-password 或环境变量 REVIEWER_PASSWORD 提供）
+        if not args.reviewer_password:
+            print("[skip] 未提供审核员密码，跳过审核演示环节。")
+            print("       用法：--reviewer-password '<密码>'  或设置环境变量 REVIEWER_PASSWORD")
+        else:
+            r = c.post(
+                f"{API}/auth/login",
+                json={"username": args.reviewer_user, "password": args.reviewer_password},
+            )
+            if r.status_code != 200:
+                print("审核员登录失败（账号或密码不正确？）")
+                sys.exit(0)
+            vh = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
-        # 第 1 条：认领并通过
-        first = created[0]
-        c.post(f"{API}/review/{first['id']}/claim", headers=vh)
-        c.post(
-            f"{API}/review/{first['id']}/decision",
-            json={"decision": "APPROVED", "comment": "现场照片清晰，确认存在飞线充电，已转消防部门跟进。"},
-            headers=vh,
-        )
-        print(f"[ok] 已审核通过：{first['report_no']}")
-
-        # 第 2 条：退回补充材料
-        if len(created) > 1:
-            second = created[1]
+            # 第 1 条：认领并通过
+            first = created[0]
+            c.post(f"{API}/review/{first['id']}/claim", headers=vh)
             c.post(
-                f"{API}/review/{second['id']}/decision",
-                json={"decision": "NEED_SUPPLEMENT", "comment": "请补充能看清门牌号或楼栋号的远景照片"},
+                f"{API}/review/{first['id']}/decision",
+                json={"decision": "APPROVED", "comment": "现场照片清晰，确认存在飞线充电，已转消防部门跟进。"},
                 headers=vh,
             )
-            print(f"[ok] 已退回补充材料：{second['report_no']}")
+            print(f"[ok] 已审核通过：{first['report_no']}")
 
-        # 第 3 条：不通过
-        if len(created) > 2:
-            third = created[2]
-            c.post(
-                f"{API}/review/{third['id']}/decision",
-                json={"decision": "REJECTED", "reason_code": "UNCLEAR_IMAGE", "comment": "夜间拍摄较为模糊，难以确认车辆状态。"},
-                headers=vh,
-            )
-            print(f"[ok] 已判定不通过：{third['report_no']}")
+            # 第 2 条：退回补充材料
+            if len(created) > 1:
+                second = created[1]
+                c.post(
+                    f"{API}/review/{second['id']}/decision",
+                    json={"decision": "NEED_SUPPLEMENT", "comment": "请补充能看清门牌号或楼栋号的远景照片"},
+                    headers=vh,
+                )
+                print(f"[ok] 已退回补充材料：{second['report_no']}")
+
+            # 第 3 条：不通过
+            if len(created) > 2:
+                third = created[2]
+                c.post(
+                    f"{API}/review/{third['id']}/decision",
+                    json={"decision": "REJECTED", "reason_code": "UNCLEAR_IMAGE", "comment": "夜间拍摄较为模糊，难以确认车辆状态。"},
+                    headers=vh,
+                )
+                print(f"[ok] 已判定不通过：{third['report_no']}")
 
     print("\n演示数据生成完成。")
     print(f"  上报人登录：手机号 {args.phone} + 验证码 {SMS_MOCK_CODE}")
-    print("  审核端登录：reviewer1 / Review@12345")
+    print(f"  审核端账号：{args.reviewer_user}（密码为改密后设定值，本项目不再回显明文）")
     print(f"  打开页面：{base}/")
 
 

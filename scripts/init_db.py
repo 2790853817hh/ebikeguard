@@ -1,8 +1,13 @@
-"""数据库初始化脚本：建表 + 写入种子数据（行为类型字典、系统配置）+ 演示账号。
+"""数据库初始化脚本：建表 + 写入种子数据（行为类型字典、系统配置）+ 管理端账号。
 
 用法：
     python scripts/init_db.py            # 建表 + 种子（幂等，已存在则跳过）
     python scripts/init_db.py --reset    # 危险：删除现有库后重建（仅演示环境使用）
+
+账号密码来源（2026-10-15 起不再硬编码明文）：
+    优先读 .env / 环境变量（SEED_ADMIN_PASSWORD、SEED_REVIEWER1_PASSWORD、SEED_REVIEWER2_PASSWORD）；
+    未配置的账号则**随机生成强密码**并在本次运行中打印一次，请立即记录。
+    修改既有账号密码请用：python scripts/set_password.py --username admin --generate
 """
 from __future__ import annotations
 
@@ -17,18 +22,18 @@ sys.path.insert(0, str(ROOT))
 from app.config import settings  # noqa: E402
 from app.core.constants import DEFAULT_SYSTEM_CONFIG, Role, UserStatus  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
-from app.core.utils import utc_now_iso  # noqa: E402
+from app.core.utils import gen_password, utc_now_iso  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app import models  # noqa: E402,F401  （确保所有模型被注册）
 from app.models import AppUser, BehaviorType, SystemConfig  # noqa: E402
 
 SEED_DIR = ROOT / "seeds"
 
-DEMO_USERS = [
-    # username, password, real_name, role, org_code, phone
-    ("admin", "Admin@12345", "系统管理员", Role.ADMIN, "XZ_STATE", "13900000001"),
-    ("reviewer1", "Review@12345", "审核员一", Role.REVIEWER, "XZ_STATE", "13900000002"),
-    ("reviewer2", "Review@12345", "审核员二", Role.REVIEWER, "XZ_STATE", "13900000003"),
+# username, real_name, role, org_code, phone, settings 中的密码字段名
+SEED_USERS = [
+    ("admin", "系统管理员", Role.ADMIN, "XZ_STATE", "13900000001", "seed_admin_password"),
+    ("reviewer1", "审核员一", Role.REVIEWER, "XZ_STATE", "13900000002", "seed_reviewer1_password"),
+    ("reviewer2", "审核员二", Role.REVIEWER, "XZ_STATE", "13900000003", "seed_reviewer2_password"),
 ]
 
 
@@ -73,12 +78,24 @@ def seed_system_config(db) -> int:
     return added
 
 
-def seed_users(db) -> int:
+def seed_users(db) -> tuple[int, list[tuple[str, str]]]:
+    """创建管理端账号（仅账号不存在时）。
+
+    返回 (新增数量, [(账号, 随机生成的明文密码)])——第二个元素仅包含
+    「本次随机生成」的密码，供调用方打印一次；配置中显式给出的密码不回显。
+    """
     added = 0
-    for username, password, real_name, role, org, phone in DEMO_USERS:
+    generated: list[tuple[str, str]] = []
+    for username, real_name, role, org, phone, pwd_field in SEED_USERS:
         exists = db.query(AppUser).filter(AppUser.username == username).first()
         if exists:
             continue
+        configured = (getattr(settings, pwd_field, "") or "").strip()
+        if configured:
+            password = configured
+        else:
+            password = gen_password(12)
+            generated.append((username, password))
         db.add(
             AppUser(
                 username=username,
@@ -92,7 +109,7 @@ def seed_users(db) -> int:
         )
         added += 1
     db.commit()
-    return added
+    return added, generated
 
 
 def main() -> None:
@@ -118,13 +135,21 @@ def main() -> None:
     with SessionLocal() as db:
         n1 = seed_behavior_types(db)
         n2 = seed_system_config(db)
-        n3 = seed_users(db)
-        print(f"[ok] 行为类型新增 {n1} 条；系统配置新增 {n2} 条；演示账号新增 {n3} 个")
+        n3, generated = seed_users(db)
+        print(f"[ok] 行为类型新增 {n1} 条；系统配置新增 {n2} 条；管理端账号新增 {n3} 个")
 
-    print("\n演示账号：")
-    for username, password, real_name, role, *_ in DEMO_USERS:
-        print(f"  {username:<10} / {password:<12}  ({role})")
-    print("\n上报人登录：手机号 + 短信验证码（Mock 环境固定验证码，见 .env 的 SMS_MOCK_CODE）")
+    if generated:
+        print("\n" + "=" * 46)
+        print("以下账号为本次新建，密码为随机生成（仅本次显示，请立即记录）：")
+        print("=" * 46)
+        for username, password in generated:
+            print(f"  {username:<12} {password}")
+        print("=" * 46)
+        print("提示：如希望改用固定密码，可在 .env 中设置 SEED_ADMIN_PASSWORD 等变量后重建账号，")
+        print("      或用 python scripts/set_password.py --username <账号> --password '<新密码>' 修改。")
+
+    print("\n管理端账号：admin（管理员）、reviewer1 / reviewer2（审核员）")
+    print("上报人登录：手机号 + 短信验证码（Mock 环境固定验证码，见 .env 的 SMS_MOCK_CODE）")
     print("数据库文件：", settings.database_url)
 
 
