@@ -14,7 +14,8 @@
     <div>
       <div class="card">
         <h3 class="card-title">🗂️ 待审队列 <span class="hint" id="queueHint"></span></h3>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+        <!-- filter-stack：桌面纵向排列；≤640px 自动转为两列网格（样式见 base.css ⑬） -->
+        <div class="filter-stack">
           <select id="fStatus">
             <option value="AI_DONE_PENDING_HUMAN">待人工审核</option>
             <option value="HUMAN_REVIEWING">我已认领 / 审核中</option>
