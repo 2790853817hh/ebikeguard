@@ -37,7 +37,7 @@
   function itemHtml(it) {
     var thumb = it.cover_url
       ? '<img class="thumb" src="' + A.escapeHtml(it.cover_url) + '" alt="" loading="lazy">'
-      : '<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:#9aa4b2">无图</div>';
+      : '<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted-light)">无图</div>';
     return '<div class="report-item" data-id="' + it.id + '">' + thumb +
       '<div class="body">' +
         '<div class="title ellipsis">' + A.escapeHtml(it.behavior_type_name || '未知类型') + ' ' + A.statusTag(it.status) + '</div>' +

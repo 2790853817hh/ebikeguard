@@ -63,7 +63,7 @@
     var overdue = it.waiting_hours > 24 ? ' <span class="tag tag-red">超 ' + Math.round(it.waiting_hours) + 'h</span>' : '';
     var thumb = it.cover_url
       ? '<img class="thumb" src="' + A.escapeHtml(it.cover_url) + '" alt="" loading="lazy">'
-      : '<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:#9aa4b2">无图</div>';
+      : '<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted-light)">无图</div>';
     return '<div class="report-item" data-id="' + it.id + '">' + thumb +
       '<div class="body">' +
         '<div class="title ellipsis">' + A.escapeHtml(it.behavior_type_name || '-') + ' ' + A.statusTag(it.status) + overdue + '</div>' +
@@ -95,7 +95,7 @@
 
     // AI 建议
     if (d.ai_result) {
-      html += '<div class="card" style="box-shadow:none;background:#fafbfc">' +
+      html += '<div class="card" style="box-shadow:none;background:var(--bg-subtle)">' +
         '<div style="margin-bottom:8px"><b>AI 初审建议</b> ' + A.aiTag(d.ai_result.conclusion, d.ai_result.confidence) +
         '<span class="subtle" style="margin-left:6px">' + A.escapeHtml(d.ai_result.model_name) + '</span></div>' +
         '<ul style="margin:0;padding-left:18px">' + d.ai_result.reasons.map(function (x) {

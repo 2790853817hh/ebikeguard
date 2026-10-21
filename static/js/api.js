@@ -27,6 +27,31 @@
    */
   function page(p) { return '/' + String(p).replace(/^\.?\//, ''); }
 
+  /**
+   * 主题：浅色（默认）/ 深色，存 localStorage。
+   * 首屏由各页面 <head> 的内联脚本先写 data-theme（避免深色用户看到白屏闪烁），
+   * 此处负责切换与持久化。
+   */
+  var THEME_KEY = 'ev_theme';
+  var Theme = {
+    get: function () { return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'; },
+    apply: function (t) {
+      var root = document.documentElement;
+      if (t === 'dark') root.setAttribute('data-theme', 'dark');
+      else root.removeAttribute('data-theme');
+    },
+    toggle: function () {
+      var next = this.get() === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* 隐私模式下忽略 */ }
+      this.apply(next);
+      return next;
+    },
+    bind: function (btn) {
+      if (!btn) return;
+      btn.addEventListener('click', function () { Theme.toggle(); });
+    }
+  };
+
   var Auth = {
     get token() { return localStorage.getItem(KEY_ACCESS); },
     get refreshToken() { return localStorage.getItem(KEY_REFRESH); },
@@ -214,11 +239,21 @@
         '<nav class="main-nav">' + links + '</nav>' +
         '<div class="spacer"></div>' +
         '<div class="who">' + escapeHtml(who) + '</div>' +
+        '<button class="btn btn-sm theme-toggle" id="btnTheme" type="button" ' +
+          'aria-label="切换深色/浅色主题" title="切换深色/浅色主题">' +
+          '<svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' +
+          '<svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+            'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>' +
+        '</button>' +
         (user ? '<button class="btn btn-sm" id="btnLogout">退出</button>' : '') +
       '</header>';
     document.body.insertAdjacentHTML('afterbegin', html);
     var btn = $('#btnLogout');
     if (btn) btn.onclick = function () { Auth.logout(); };
+    Theme.bind($('#btnTheme'));
     if (user) {
       refreshUnreadBadge();
       startBadgeLoop();
@@ -251,6 +286,7 @@
 
   global.API = {
     Auth: Auth,
+    Theme: Theme,
     api: api,
     page: page,
     $: $, $$: $$,
